@@ -1,0 +1,66 @@
+# ============================================================
+# Smart Farming AI Agent — Requirements
+# Project: AI Agent for Smart Farming Advice (Problem No. 9)
+# Tech: LangFlow + IBM watsonx.ai + IBM Granite + RAG
+# GitHub: https://github.com/MdSohailAli3/FarmFriend-AI-Agent
+# ============================================================
+ 
+# ── Core LangFlow ──────────────────────────────────────────
+langflow==1.3.4                  # Visual multi-agent workflow orchestration
+ 
+# ── IBM watsonx.ai & Granite ───────────────────────────────
+ibm-watsonx-ai==1.1.15           # IBM watsonx.ai SDK (LLM + Embeddings)
+ibm-cloud-sdk-core==3.20.3       # IBM Cloud authentication & core utilities
+ 
+# ── LangChain (LangFlow dependency + RAG pipeline) ─────────
+langchain==0.3.14
+langchain-community==0.3.14      # Community integrations (FAISS, loaders)
+langchain-core==0.3.29           # Core abstractions
+langchain-ibm==0.3.5             # IBM watsonx.ai LangChain integration
+ 
+# ── Vector Store (RAG) ─────────────────────────────────────
+faiss-cpu==1.9.0                 # FAISS vector similarity search (CPU)
+chromadb==0.5.23                 # Alternative vector DB (optional)
+ 
+# ── Document Loaders & Text Processing ────────────────────
+pypdf==4.3.1                     # PDF loader for ICAR / agri documents
+python-docx==1.1.2               # Word document loader
+unstructured==0.16.5             # Universal document parser
+tiktoken==0.8.0                  # Token counting for chunking
+ 
+# ── Embeddings ────────────────────────────────────────────
+sentence-transformers==3.3.1     # Local fallback embeddings (all-MiniLM-L6-v2)
+ 
+# ── Web Framework / UI ────────────────────────────────────
+streamlit==1.40.1                # Farmer-facing multilingual chat UI
+streamlit-chat==0.1.1            # Chat message components for Streamlit
+ 
+# ── API Integrations ──────────────────────────────────────
+requests==2.32.3                 # HTTP client for Agmarknet + IMD APIs
+httpx==0.27.2                    # Async HTTP client
+aiohttp==3.10.10                 # Async requests for live mandi price fetching
+ 
+# ── Data Handling ─────────────────────────────────────────
+pandas==2.2.3                    # Mandi price CSV processing & data analysis
+numpy==1.26.4                    # Numerical operations
+python-dotenv==1.0.1             # Load IBM API keys from .env file
+pydantic==2.9.2                  # Data validation and settings management
+ 
+# ── Multilingual / NLP ────────────────────────────────────
+langdetect==1.0.9                # Detect farmer's input language
+deep-translator==1.11.4          # Optional: translate queries to English for retrieval
+ 
+# ── Utilities ─────────────────────────────────────────────
+tqdm==4.67.0                     # Progress bars during document ingestion
+loguru==0.7.2                    # Better logging
+tenacity==9.0.0                  # Retry logic for API calls
+python-jose==3.3.0               # JWT token handling for IBM Cloud auth
+ 
+# ── Optional: Voice Input (Future Scope) ──────────────────
+# SpeechRecognition==3.11.0      # Voice-to-text for farmers using voice queries
+# gTTS==2.5.3                    # Text-to-speech for audio responses
+ 
+# ── Development / Testing ─────────────────────────────────
+pytest==8.3.3                    # Unit testing
+pytest-asyncio==0.24.0           # Async test support
+python-multipart==0.0.18         # File upload support in Streamlit

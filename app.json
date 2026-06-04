@@ -1,0 +1,571 @@
+{
+  "id": "smart-farming-ai-agent",
+  "name": "Smart Farming AI Agent",
+  "description": "AI-powered Smart Farming Advisor using RAG, IBM Granite (via watsonx.ai), and LangFlow. Supports multilingual queries on crop recommendations, mandi prices, pest control, soil health, and weather forecasts.",
+  "version": "1.0.0",
+  "data": {
+    "nodes": [
+      {
+        "id": "ChatInput-1",
+        "type": "ChatInput",
+        "position": { "x": 50, "y": 300 },
+        "data": {
+          "type": "ChatInput",
+          "node": {
+            "display_name": "Farmer Query Input",
+            "description": "Accepts multilingual text queries from farmers (Hindi, Marathi, Tamil, English, etc.)",
+            "template": {
+              "input_value": {
+                "type": "str",
+                "value": "What crop should I grow this season in Maharashtra?",
+                "display_name": "Farmer Query",
+                "info": "Enter your farming question in any Indian language or English"
+              },
+              "sender": {
+                "type": "str",
+                "value": "User",
+                "display_name": "Sender"
+              },
+              "sender_name": {
+                "type": "str",
+                "value": "Farmer",
+                "display_name": "Sender Name"
+              },
+              "session_id": {
+                "type": "str",
+                "value": "",
+                "display_name": "Session ID"
+              }
+            },
+            "outputs": [
+              { "name": "message", "display_name": "Message", "types": ["Message"] }
+            ]
+          }
+        }
+      },
+      {
+        "id": "File-KnowledgeBase-1",
+        "type": "File",
+        "position": { "x": 50, "y": 100 },
+        "data": {
+          "type": "File",
+          "node": {
+            "display_name": "Agri Knowledge Base",
+            "description": "Agricultural PDFs, ICAR crop guides, pest control manuals, soil health documents",
+            "template": {
+              "path": {
+                "type": "file",
+                "value": "agri_knowledge_base.pdf",
+                "display_name": "Knowledge Base File",
+                "file_types": [".pdf", ".txt", ".csv", ".docx"],
+                "info": "Upload ICAR guides, crop calendars, mandi price CSVs, soil reports"
+              },
+              "silent_errors": {
+                "type": "bool",
+                "value": false,
+                "display_name": "Silent Errors"
+              }
+            },
+            "outputs": [
+              { "name": "data", "display_name": "Data", "types": ["Data"] }
+            ]
+          }
+        }
+      },
+      {
+        "id": "SplitText-1",
+        "type": "SplitText",
+        "position": { "x": 300, "y": 100 },
+        "data": {
+          "type": "SplitText",
+          "node": {
+            "display_name": "Text Chunker",
+            "description": "Splits agricultural documents into retrievable chunks",
+            "template": {
+              "data_inputs": {
+                "type": "Data",
+                "display_name": "Data"
+              },
+              "chunk_size": {
+                "type": "int",
+                "value": 500,
+                "display_name": "Chunk Size"
+              },
+              "chunk_overlap": {
+                "type": "int",
+                "value": 50,
+                "display_name": "Chunk Overlap"
+              },
+              "separator": {
+                "type": "str",
+                "value": "\n",
+                "display_name": "Separator"
+              }
+            },
+            "outputs": [
+              { "name": "chunks", "display_name": "Chunks", "types": ["Data"] }
+            ]
+          }
+        }
+      },
+      {
+        "id": "WatsonxEmbeddings-1",
+        "type": "WatsonxEmbeddings",
+        "position": { "x": 550, "y": 100 },
+        "data": {
+          "type": "WatsonxEmbeddings",
+          "node": {
+            "display_name": "IBM watsonx Embeddings",
+            "description": "Generates vector embeddings using IBM watsonx.ai",
+            "template": {
+              "model_id": {
+                "type": "str",
+                "value": "ibm/slate-30m-english-rtrvr",
+                "display_name": "Embedding Model",
+                "options": [
+                  "ibm/slate-30m-english-rtrvr",
+                  "ibm/slate-125m-english-rtrvr"
+                ],
+                "info": "IBM watsonx embedding model for semantic search"
+              },
+              "url": {
+                "type": "str",
+                "value": "https://us-south.ml.cloud.ibm.com",
+                "display_name": "watsonx.ai URL"
+              },
+              "apikey": {
+                "type": "str",
+                "value": "",
+                "password": true,
+                "display_name": "IBM Cloud API Key",
+                "info": "Your IBM Cloud API key from cloud.ibm.com"
+              },
+              "project_id": {
+                "type": "str",
+                "value": "",
+                "display_name": "watsonx Project ID"
+              }
+            },
+            "outputs": [
+              { "name": "embeddings", "display_name": "Embeddings", "types": ["Embeddings"] }
+            ]
+          }
+        }
+      },
+      {
+        "id": "FAISS-VectorStore-1",
+        "type": "FAISS",
+        "position": { "x": 800, "y": 100 },
+        "data": {
+          "type": "FAISS",
+          "node": {
+            "display_name": "FAISS Vector Store",
+            "description": "Stores and retrieves agricultural knowledge embeddings",
+            "template": {
+              "ingest_data": {
+                "type": "Data",
+                "display_name": "Ingest Data"
+              },
+              "embedding": {
+                "type": "Embeddings",
+                "display_name": "Embedding Model"
+              },
+              "index_name": {
+                "type": "str",
+                "value": "agri_knowledge_index",
+                "display_name": "Index Name"
+              },
+              "number_of_results": {
+                "type": "int",
+                "value": 4,
+                "display_name": "Number of Results",
+                "info": "Number of relevant chunks to retrieve per query"
+              }
+            },
+            "outputs": [
+              { "name": "search_results", "display_name": "Search Results", "types": ["Data"] },
+              { "name": "vector_store", "display_name": "Vector Store", "types": ["VectorStore"] }
+            ]
+          }
+        }
+      },
+      {
+        "id": "Retriever-1",
+        "type": "VectorStoreRetriever",
+        "position": { "x": 800, "y": 300 },
+        "data": {
+          "type": "VectorStoreRetriever",
+          "node": {
+            "display_name": "RAG Retriever",
+            "description": "Retrieves relevant agricultural knowledge based on farmer query",
+            "template": {
+              "vectorstore": {
+                "type": "VectorStore",
+                "display_name": "Vector Store"
+              },
+              "search_type": {
+                "type": "str",
+                "value": "similarity",
+                "display_name": "Search Type",
+                "options": ["similarity", "mmr", "similarity_score_threshold"]
+              },
+              "search_kwargs": {
+                "type": "dict",
+                "value": { "k": 4 },
+                "display_name": "Search Arguments"
+              }
+            },
+            "outputs": [
+              { "name": "retriever", "display_name": "Retriever", "types": ["BaseRetriever"] }
+            ]
+          }
+        }
+      },
+      {
+        "id": "WatsonxLLM-1",
+        "type": "WatsonxLLM",
+        "position": { "x": 550, "y": 300 },
+        "data": {
+          "type": "WatsonxLLM",
+          "node": {
+            "display_name": "IBM Granite 3.3-8B (via watsonx.ai)",
+            "description": "IBM Granite model for multilingual agricultural reasoning and generation",
+            "template": {
+              "model_id": {
+                "type": "str",
+                "value": "ibm/granite-3-3-8b-instruct",
+                "display_name": "Granite Model",
+                "options": [
+                  "ibm/granite-3-3-8b-instruct",
+                  "ibm/granite-3-2-8b-instruct",
+                  "ibm/granite-3-1-8b-instruct",
+                  "ibm/granite-13b-chat-v2"
+                ],
+                "info": "IBM Granite model — supports Hindi, Marathi, Tamil, and other Indian languages"
+              },
+              "url": {
+                "type": "str",
+                "value": "https://us-south.ml.cloud.ibm.com",
+                "display_name": "watsonx.ai Endpoint"
+              },
+              "apikey": {
+                "type": "str",
+                "value": "",
+                "password": true,
+                "display_name": "IBM Cloud API Key"
+              },
+              "project_id": {
+                "type": "str",
+                "value": "",
+                "display_name": "watsonx Project ID",
+                "info": "Found in your watsonx.ai project settings"
+              },
+              "parameters": {
+                "type": "dict",
+                "value": {
+                  "decoding_method": "greedy",
+                  "max_new_tokens": 512,
+                  "min_new_tokens": 50,
+                  "temperature": 0.3,
+                  "top_k": 50,
+                  "top_p": 1,
+                  "repetition_penalty": 1.1
+                },
+                "display_name": "Generation Parameters"
+              }
+            },
+            "outputs": [
+              { "name": "model", "display_name": "Language Model", "types": ["LanguageModel"] }
+            ]
+          }
+        }
+      },
+      {
+        "id": "PromptTemplate-1",
+        "type": "Prompt",
+        "position": { "x": 300, "y": 300 },
+        "data": {
+          "type": "Prompt",
+          "node": {
+            "display_name": "Smart Farming System Prompt",
+            "description": "Instructs IBM Granite to act as a knowledgeable farming advisor",
+            "template": {
+              "template": {
+                "type": "str",
+                "display_name": "Prompt Template",
+                "value": "You are KisanMitra, an expert AI farming advisor for Indian small-scale farmers.\nYou have deep knowledge of:\n- Crop selection based on season, soil type, and region\n- Live mandi (market) prices for vegetables, grains, and pulses\n- Pest and disease identification and organic/chemical remedies\n- Weather-based farming decisions\n- Government schemes like PM-KISAN, PM Fasal Bima Yojana\n- Soil health management and fertilizer recommendations\n\nAlways respond in the same language the farmer used. If Hindi, reply in Hindi. If Marathi, reply in Marathi.\nBe concise, practical, and farmer-friendly. Avoid technical jargon.\n\nContext from Knowledge Base:\n{context}\n\nFarmer's Question: {question}\n\nYour helpful answer:"
+              },
+              "context": {
+                "type": "str",
+                "display_name": "Context",
+                "input_types": ["Document", "Data", "str"]
+              },
+              "question": {
+                "type": "str",
+                "display_name": "Question",
+                "input_types": ["Message", "str"]
+              }
+            },
+            "outputs": [
+              { "name": "prompt", "display_name": "Prompt", "types": ["Message"] }
+            ]
+          }
+        }
+      },
+      {
+        "id": "ParseData-1",
+        "type": "ParseData",
+        "position": { "x": 1050, "y": 300 },
+        "data": {
+          "type": "ParseData",
+          "node": {
+            "display_name": "Parse Retrieved Context",
+            "description": "Formats retrieved agricultural knowledge for the prompt",
+            "template": {
+              "data": {
+                "type": "Data",
+                "display_name": "Retrieved Data"
+              },
+              "template": {
+                "type": "str",
+                "value": "{text}",
+                "display_name": "Output Template"
+              },
+              "sep": {
+                "type": "str",
+                "value": "\n---\n",
+                "display_name": "Separator"
+              }
+            },
+            "outputs": [
+              { "name": "text", "display_name": "Parsed Text", "types": ["Message"] }
+            ]
+          }
+        }
+      },
+      {
+        "id": "LLMChain-1",
+        "type": "LLMChain",
+        "position": { "x": 800, "y": 500 },
+        "data": {
+          "type": "LLMChain",
+          "node": {
+            "display_name": "Farming Advisory Chain",
+            "description": "Combines prompt + IBM Granite to generate localized farming advice",
+            "template": {
+              "llm": {
+                "type": "LanguageModel",
+                "display_name": "Language Model"
+              },
+              "prompt": {
+                "type": "BasePromptTemplate",
+                "display_name": "Prompt"
+              },
+              "memory": {
+                "type": "BaseChatMemory",
+                "display_name": "Memory",
+                "required": false
+              }
+            },
+            "outputs": [
+              { "name": "text", "display_name": "Response Text", "types": ["Message"] }
+            ]
+          }
+        }
+      },
+      {
+        "id": "Agent-Router-1",
+        "type": "ToolCallingAgent",
+        "position": { "x": 550, "y": 500 },
+        "data": {
+          "type": "ToolCallingAgent",
+          "node": {
+            "display_name": "Smart Farming Multi-Agent Router",
+            "description": "Routes queries to the correct specialized agent: Crop, Market, Pest, or Weather",
+            "template": {
+              "llm": {
+                "type": "LanguageModel",
+                "display_name": "IBM Granite LLM"
+              },
+              "tools": {
+                "type": "Tool",
+                "display_name": "Agent Tools",
+                "list": true
+              },
+              "system_message": {
+                "type": "str",
+                "value": "You are KisanMitra, a Smart Farming AI Agent. Based on the farmer's query, use the appropriate tool:\n- crop_advisory_tool: for crop selection, soil, fertilizer questions\n- market_price_tool: for mandi prices, selling decisions\n- pest_control_tool: for pest/disease identification and treatment\n- weather_advisory_tool: for weather-based farming decisions\nAlways respond in the farmer's language.",
+                "display_name": "System Message"
+              },
+              "input_value": {
+                "type": "Message",
+                "display_name": "Input Message"
+              }
+            },
+            "outputs": [
+              { "name": "response", "display_name": "Agent Response", "types": ["Message"] }
+            ]
+          }
+        }
+      },
+      {
+        "id": "ChatOutput-1",
+        "type": "ChatOutput",
+        "position": { "x": 1050, "y": 500 },
+        "data": {
+          "type": "ChatOutput",
+          "node": {
+            "display_name": "Farmer Response Output",
+            "description": "Displays the localized farming advice to the farmer",
+            "template": {
+              "input_value": {
+                "type": "Message",
+                "display_name": "Message"
+              },
+              "sender": {
+                "type": "str",
+                "value": "Machine",
+                "display_name": "Sender"
+              },
+              "sender_name": {
+                "type": "str",
+                "value": "KisanMitra AI",
+                "display_name": "Sender Name"
+              },
+              "session_id": {
+                "type": "str",
+                "value": "",
+                "display_name": "Session ID"
+              },
+              "data_template": {
+                "type": "str",
+                "value": "{text}",
+                "display_name": "Data Template"
+              }
+            },
+            "outputs": [
+              { "name": "message", "display_name": "Message", "types": ["Message"] }
+            ]
+          }
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge-File-to-SplitText",
+        "source": "File-KnowledgeBase-1",
+        "target": "SplitText-1",
+        "sourceHandle": "data",
+        "targetHandle": "data_inputs"
+      },
+      {
+        "id": "edge-SplitText-to-FAISS",
+        "source": "SplitText-1",
+        "target": "FAISS-VectorStore-1",
+        "sourceHandle": "chunks",
+        "targetHandle": "ingest_data"
+      },
+      {
+        "id": "edge-Embeddings-to-FAISS",
+        "source": "WatsonxEmbeddings-1",
+        "target": "FAISS-VectorStore-1",
+        "sourceHandle": "embeddings",
+        "targetHandle": "embedding"
+      },
+      {
+        "id": "edge-FAISS-to-Retriever",
+        "source": "FAISS-VectorStore-1",
+        "target": "Retriever-1",
+        "sourceHandle": "vector_store",
+        "targetHandle": "vectorstore"
+      },
+      {
+        "id": "edge-Retriever-to-ParseData",
+        "source": "Retriever-1",
+        "target": "ParseData-1",
+        "sourceHandle": "retriever",
+        "targetHandle": "data"
+      },
+      {
+        "id": "edge-ParseData-to-Prompt",
+        "source": "ParseData-1",
+        "target": "PromptTemplate-1",
+        "sourceHandle": "text",
+        "targetHandle": "context"
+      },
+      {
+        "id": "edge-ChatInput-to-Prompt",
+        "source": "ChatInput-1",
+        "target": "PromptTemplate-1",
+        "sourceHandle": "message",
+        "targetHandle": "question"
+      },
+      {
+        "id": "edge-ChatInput-to-Agent",
+        "source": "ChatInput-1",
+        "target": "Agent-Router-1",
+        "sourceHandle": "message",
+        "targetHandle": "input_value"
+      },
+      {
+        "id": "edge-Granite-to-Agent",
+        "source": "WatsonxLLM-1",
+        "target": "Agent-Router-1",
+        "sourceHandle": "model",
+        "targetHandle": "llm"
+      },
+      {
+        "id": "edge-Granite-to-Chain",
+        "source": "WatsonxLLM-1",
+        "target": "LLMChain-1",
+        "sourceHandle": "model",
+        "targetHandle": "llm"
+      },
+      {
+        "id": "edge-Prompt-to-Chain",
+        "source": "PromptTemplate-1",
+        "target": "LLMChain-1",
+        "sourceHandle": "prompt",
+        "targetHandle": "prompt"
+      },
+      {
+        "id": "edge-Agent-to-ChatOutput",
+        "source": "Agent-Router-1",
+        "target": "ChatOutput-1",
+        "sourceHandle": "response",
+        "targetHandle": "input_value"
+      }
+    ],
+    "viewport": {
+      "x": 0,
+      "y": 0,
+      "zoom": 0.75
+    }
+  },
+  "style": {
+    "theme": "dark"
+  },
+  "tags": ["agriculture", "IBM-Granite", "RAG", "LangFlow", "watsonx", "smart-farming", "multilingual"],
+  "metadata": {
+    "project": "AI Agent for Smart Farming Advice",
+    "problem_statement": "No. 9 - IBM University Engagement, Eduent Foundation",
+    "domain": "Agriculture",
+    "tech_stack": [
+      "LangFlow",
+      "IBM watsonx.ai",
+      "IBM Granite 3.3-8B-Instruct",
+      "FAISS Vector Store",
+      "IBM Cloud Lite",
+      "RAG (Retrieval-Augmented Generation)"
+    ],
+    "github": "https://github.com/MdSohailAli3/FarmFriend-AI-Agent",
+    "agents": [
+      "Crop Advisory Agent",
+      "Market Price Agent (Agmarknet API)",
+      "Pest & Disease Control Agent",
+      "Weather & Soil Agent (IMD API)"
+    ],
+    "supported_languages": ["English", "Hindi", "Marathi", "Punjabi", "Tamil", "Telugu", "Kannada"],
+    "created": "2026-06-05"
+  }
+}
